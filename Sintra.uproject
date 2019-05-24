@@ -3,6 +3,13 @@
 	"EngineAssociation": "4.21",
 	"Category": "",
 	"Description": "",
+	"Modules": [
+		{
+			"Name": "Sintra",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
 	"TargetPlatforms": [
 		"PS4",
 		"WindowsNoEditor"
