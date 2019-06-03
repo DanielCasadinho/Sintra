@@ -1,19 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "MyShapefileReader.h"
-
-
-TArray<FLine> UMyShapefileReader::getSplinePoints()
+#include "MyShapefilePolyReader.h"
+TArray<FPolygon> UMyShapefilePolyReader::getSplinePolygons()
 {
-
-	TArray<FLine> splinePoints;
-	splinePoints = TArray<FLine>();
+	TArray<FPolygon> splinePolygons;
+	splinePolygons = TArray<FPolygon>();
 
 	/* DEM file setup */
 	char* demPNG = "D:/Daniel_Casadinho/New_Data/demclip.png";
 	GDALDataset *png;
 	GDALAllRegister();
-	
+
 	char* demTIF = "D:/Daniel_Casadinho/New_Data/demclip.tif";
 	GDALDataset *tif;
 	GDALAllRegister();
@@ -21,26 +18,31 @@ TArray<FLine> UMyShapefileReader::getSplinePoints()
 	png = (GDALDataset*)GDALOpen(demPNG, GA_ReadOnly);
 
 	tif = (GDALDataset*)GDALOpen(demTIF, GA_ReadOnly);
+
+	/*Retrieve projection info*/
 	double tifTransformFactor[6];
 	tif->GetGeoTransform(tifTransformFactor);
 
-
+	/*Setting up Buffers (pngscanline not necessary?)*/
 	float *tifScanLine = (float*)CPLMalloc(sizeof(float*) * 1);
-	GDALRasterBand *tifBand = tif->GetRasterBand(1);
+	float *pngScanLine = (float*)CPLMalloc(sizeof(float*) * 1);
 
-	float *pngScanLine = (float*)CPLMalloc(sizeof(float*)*1);
+	/*Access Bands on Rasters*/
+	GDALRasterBand *tifBand = tif->GetRasterBand(1);
 	GDALRasterBand *pngBand = png->GetRasterBand(1);
+
+
 	/* Shapefile Setup */
-	char* shapeFile = "D:/Daniel_Casadinho/New_Data/Vector2/L_Vias_3D_small.shp";
+	char* shapeFile = "D:/Daniel_Casadinho/New_Data/Vetor/A_hidrografia_3D_20790_extracted.shp";
 	GDALAllRegister();
 
-	GDALDataset *road = (GDALDataset*)GDALOpenEx(shapeFile, GDAL_OF_VECTOR, NULL, NULL, NULL);
-	if (road == NULL) { 
-		printf("Open failed.\n"); 
+	GDALDataset *water = (GDALDataset*)GDALOpenEx(shapeFile, GDAL_OF_VECTOR, NULL, NULL, NULL);
+	if (water == NULL) {
+		printf("Open failed.\n");
 		exit(1);
 	}
 
-	
+
 
 	//FLine line;
 	//for (int i = 0; i < tif->GetRasterYSize(); i = i + 100)
@@ -52,44 +54,46 @@ TArray<FLine> UMyShapefileReader::getSplinePoints()
 	//	}
 
 	/* --- READING SHAPEFILE --- */
-	
-	OGRLayer  *pLayer = road->GetLayerByName("L_Vias_3D_small");
-	OGRFeatureDefn *poFDefn = pLayer->GetLayerDefn();
+	 
+	OGRLayer  *pLayer = water->GetLayerByName("A_hidrografia_3D_20790_extracted");
+	//OGRFeatureDefn *poFDefn = pLayer->GetLayerDefn();
+
+	//start at first feature
 	pLayer->ResetReading();
+
+	//local variables
 	OGRFeature *poFeature;
 	OGRPoint point;
 
 	//UE_LOG(LogTemp, Display, TEXT("Number of Features: %d\n"), pLayer->GetFeatureCount(true));
 	for (int i = 0; i < pLayer->GetFeatureCount(true); i++)
 	{
+		
 		poFeature = pLayer->GetNextFeature();
-    	GIntBig FID = poFeature->GetFID();
+		GIntBig FID = poFeature->GetFID();
 
 		UE_LOG(LogTemp, Display, TEXT("Feature %d chosen\n"), FID);
 
-//		if (FID == 48 || FID == 83 || FID == 98 || FID == 100 || FID == 157 || FID == 101 || FID == 525 || FID == 558 || FID == 565 || FID == 1110
-//			|| FID == 1125 || FID == 1126 || FID == 1127 || FID == 1137 || FID == 1167)
-//		if (FID == 44 || FID == 45 || FID == 46 || FID == 51 || FID == 145 || FID == 146 || FID == 147 || FID == 527 || FID == 528 || FID == 799
-//			|| FID == 800 || FID == 887 || FID == 888)
+		if(FID == 0)
 		{
 			OGRGeometry *poGeometry;
-			poGeometry = poFeature->GetGeometryRef();
+			poGeometry = poFeature->GetGeometryRef()->clone();
 
 			//if (poGeometry != NULL && poGeometry->getGeometryType() == wkbLineString25D)
 				//UE_LOG(LogTemp, Display, TEXT("x"));
 
-			if (poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)
+			if (poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon)
 			{
 
-				FLine line;
-				OGRLineString *poLineString = (OGRLineString *)poGeometry;
+				FPolygon poly;
+				OGRPolygon *poPolygon = (OGRPolygon *)poGeometry;
 
-				UE_LOG(LogTemp, Display, TEXT("Number of Points = %d\n"), poLineString->getNumPoints());
-
-				for (int k = 0; k < poLineString->getNumPoints(); k++)
+				UE_LOG(LogTemp, Display, TEXT("Number of Rings = %d\n"), poPolygon->getNumInteriorRings()+1);
+				/*
+				for (int k = 0; k < poPolygon->getNumPoints(); k++)
 				{
 
-					poLineString->getPoint(k, &point);
+					poPolygon->getPoint(k, &point);
 					double xCoord = point.getX();
 					double yCoord = point.getY();
 
@@ -98,43 +102,41 @@ TArray<FLine> UMyShapefileReader::getSplinePoints()
 					double row = (tifTransformFactor[3] - yCoord) / (-tifTransformFactor[5]);
 
 
-					tifBand->RasterIO(GF_Read, (int) col, (int) row, 1, 1, tifScanLine, 1, 1, GDT_Float32, 1, 0);
+					tifBand->RasterIO(GF_Read, (int)col, (int)row, 1, 1, tifScanLine, 1, 1, GDT_Float32, 1, 0);
 
-					FVector pointCoords = FVector((float)getWorldX(col), (float)getWorldY(row), point.getZ()*100);
-					line.addPoint(pointCoords);
+					FVector pointCoords = FVector((float)getWorldX(col), (float)getWorldY(row), point.getZ() * 100);
+					poly.addPoint(pointCoords);
 					//UE_LOG(LogTemp, Display, TEXT("[%lf,%lf, %lf]"), (float)getWorldX(col), (float)getWorldY(row), point.getZ()*100);
 				}
 				UE_LOG(LogTemp, Display, TEXT("\n"));
-				splinePoints.Add(line);
+				splinePoints.Add(poly);*/
 			}
 		}
 		OGRFeature::DestroyFeature(poFeature);
 	}
-	
+
 	CPLFree(pngScanLine);
-	GDALClose(road);
+	CPLFree(tifScanLine);
+	GDALClose(water);
 	GDALClose(png);
 	GDALClose(tif);
 
-
-	return splinePoints;
-
+	return splinePolygons;
 }
 
-double UMyShapefileReader::getElevation(double pixelX, double pixelY, GDALRasterBand *demBand, float *scanLine ) {
+
+double UMyShapefilePolyReader::getElevation(double pixelX, double pixelY, GDALRasterBand *demBand, float *scanLine) {
 	demBand->RasterIO(GF_Read, pixelX, pixelY, 1, 1, scanLine, 1, 1, GDT_Float32, 0, 0);
 
 	return *scanLine;
 }
 
-double UMyShapefileReader::getWorldX(double geoX)
+double UMyShapefilePolyReader::getWorldX(double geoX)
 {
-	return geoX*500;
+	return geoX * 500;
 }
 
-double UMyShapefileReader::getWorldY(double geoY)
+double UMyShapefilePolyReader::getWorldY(double geoY)
 {
-	return geoY*500;
+	return geoY * 500;
 }
-
-
