@@ -44,7 +44,7 @@ public class Sintra : ModuleRules
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Landscape" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
-        LoadGDAL(Target);
+        LoadThirdParty(Target);
         // Uncomment if you are using Slate UI
         // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
@@ -52,11 +52,12 @@ public class Sintra : ModuleRules
         // PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
         // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+
         bEnableUndefinedIdentifierWarnings = false;
 
     }
 
-    public bool LoadGDAL(ReadOnlyTargetRules Target)
+    public bool LoadThirdParty(ReadOnlyTargetRules Target)
     {
 
         bool isLibrarySupported = false;
@@ -83,6 +84,8 @@ public class Sintra : ModuleRules
             PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "gdal-2.3.1", "port"));
             PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "gdal-2.3.1", "gcore"));
             PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "gdal-2.3.1", "ogr", "ogrsf_frmts"));
+
+            PublicIncludePaths.Add(Path.Combine(ThirdPartyPath, "mapbox"));
         }
 
         PublicDefinitions.Add(string.Format("WITH_GDAL_BINDING={0}", isLibrarySupported ? 1 : 0));

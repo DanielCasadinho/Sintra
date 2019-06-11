@@ -69,8 +69,7 @@ TArray<FLine> UMyShapefileReader::getSplinePoints()
 
 //		if (FID == 48 || FID == 83 || FID == 98 || FID == 100 || FID == 157 || FID == 101 || FID == 525 || FID == 558 || FID == 565 || FID == 1110
 //			|| FID == 1125 || FID == 1126 || FID == 1127 || FID == 1137 || FID == 1167)
-//		if (FID == 44 || FID == 45 || FID == 46 || FID == 51 || FID == 145 || FID == 146 || FID == 147 || FID == 527 || FID == 528 || FID == 799
-//			|| FID == 800 || FID == 887 || FID == 888)
+		//if (FID >= 0 && FID <= 1000)
 		{
 			OGRGeometry *poGeometry;
 			poGeometry = poFeature->GetGeometryRef();
@@ -100,7 +99,7 @@ TArray<FLine> UMyShapefileReader::getSplinePoints()
 
 					tifBand->RasterIO(GF_Read, (int) col, (int) row, 1, 1, tifScanLine, 1, 1, GDT_Float32, 1, 0);
 
-					FVector pointCoords = FVector((float)getWorldX(col), (float)getWorldY(row), point.getZ()*100);
+					FVector pointCoords = FVector((float)getWorldX(col), (float)getWorldY(row), (*tifScanLine) * 100); //point.getZ();
 					line.addPoint(pointCoords);
 					//UE_LOG(LogTemp, Display, TEXT("[%lf,%lf, %lf]"), (float)getWorldX(col), (float)getWorldY(row), point.getZ()*100);
 				}

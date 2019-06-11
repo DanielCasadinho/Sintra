@@ -8,6 +8,7 @@
 #include "gdal.h"
 #include "gdal_priv.h"
 #include "ogrsf_frmts.h"
+#include "earcut.hpp"
 #include "MyShapefilePolyReader.generated.h"
 
 USTRUCT(BlueprintType)
@@ -43,6 +44,8 @@ class SINTRA_API UMyShapefilePolyReader : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable)
 		static TArray<FPolygon> getSplinePolygons();
+	UFUNCTION(BlueprintCallable)
+		static TArray<int> triangulate(TArray<FVector> vertices);
 private:
 
 	static double getElevation(double pixelX, double pixelY, GDALRasterBand *demBand, float *scanLine);
